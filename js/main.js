@@ -1,13 +1,12 @@
 /* ═══════════════════════════════════════════════════════
    PENTAS BESAR 2026 — main.js
-   Reguler + VIP + VVIP | Flash Sale Code | Kuota Live
+   Reguler + VIP + VVIP | Flash Sale Code | Kuota Live | Bundling
 ═══════════════════════════════════════════════════════ */
 
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxdBrDMKpc-MtJt1vXnjOnm-MAjXmC5s-nWqAe8pyP3sdKRhryJD7mFY5gnXDqH6kv1/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxLI-LTRNYS1pyPnWf5ZdkKFLYyf0X2OqgOdTsxQP96sHNYfpypju0nzVNIpyVqCD5s/exec';
 // GANTI DENGAN URL DEPLOYMENT APPS SCRIPT KAMU YANG TERBARU
 
 // ── Konfigurasi tiket ──
-// Reguler: 513 total (EB sudah ambil 42 slot → sisa ditentukan dari server)
 const TIKET = {
   reg:  { label: 'Reguler', harga: 37000,  kapasitas: 513 },
   vip:  { label: 'VIP',     harga: 55000,  kapasitas: 284 },
@@ -15,17 +14,26 @@ const TIKET = {
 };
 
 // ── Flash sale ──
-const FLASH_SALE_CODE  = 'PB26EKKIR';
+const FLASH_SALE_CODE   = 'PB26EKKIR';
 const FLASH_SALE_DISKON = 0.5; // 50% = setengah harga
 
-let selectedId    = null;
-let jumlah        = 1;
-let currentPerson = 0;
-let persons       = [];
-let fotoBase64    = null;
-let fotoMime      = '';
-let fotoNama      = '';
+// ── Konfigurasi Bundling ──
+const BUNDLING_CONFIG = {
+  // Bundling Berdua (qty=2)
+  'BERDUAAJA':  { qty: 2, hargaTotal: { reg: 64000, vip: 100000, vvip: 134000 }, label: 'Bundling Berdua' },
+  // Bundling Berempat (qty=4)
+  'KELUARGACEMARA':  { qty: 4, hargaTotal: { reg: 138000, vip: 210000, vvip: 278000 }, label: 'Bundling Berempat' },
+};
+
+let selectedId     = null;
+let jumlah         = 1;
+let currentPerson  = 0;
+let persons        = [];
+let fotoBase64     = null;
+let fotoMime       = '';
+let fotoNama       = '';
 let flashSaleAktif = false;
+let bundlingAktif  = null; // null atau key dari BUNDLING_CONFIG
 
 document.addEventListener('DOMContentLoaded', () => {
   setupCards();
@@ -117,7 +125,7 @@ function disableCard(id) {
 }
 
 // ════════════════════════════════════════════
-//  FLASH SALE
+//  PROMO CODE (Flash Sale + Bundling)
 // ════════════════════════════════════════════
 function setupFlashSale() {
   const input  = document.getElementById('flashSaleInput');
@@ -131,17 +139,34 @@ function setupFlashSale() {
 
 function applyFlashSale(input, status) {
   const kode = input.value.trim().toUpperCase();
+
   if (kode === FLASH_SALE_CODE) {
     flashSaleAktif = true;
+    bundlingAktif  = null;
     input.disabled = true;
     document.getElementById('flashSaleBtn').disabled = true;
     document.getElementById('flashSaleBtn').textContent = '✓ Aktif';
-    status.textContent = '🎉 Flash sale telah aktif!';
+    status.textContent = '🎉 Flash sale telah aktif! Diskon 50% untuk semua kategori.';
     status.className = 'flash-status flash-status--ok';
     updateAllPriceDisplay();
     updateQtyDisplay();
+    updateQtyLock();
+
+  } else if (BUNDLING_CONFIG[kode]) {
+    bundlingAktif  = kode;
+    flashSaleAktif = false;
+    input.disabled = true;
+    document.getElementById('flashSaleBtn').disabled = true;
+    document.getElementById('flashSaleBtn').textContent = '✓ Aktif';
+    const cfg = BUNDLING_CONFIG[kode];
+    status.textContent = `🎉 ${cfg.label} aktif! Pilih kategori tiket untuk melihat harga bundling.`;
+    status.className = 'flash-status flash-status--ok';
+    updateAllPriceDisplay();
+    updateQtyDisplay();
+    updateQtyLock();
+
   } else if (kode === '') {
-    status.textContent = 'Masukkan kode flash sale';
+    status.textContent = 'Masukkan kode promo';
     status.className = 'flash-status flash-status--error';
   } else {
     status.textContent = 'Kode tidak valid';
@@ -150,16 +175,59 @@ function applyFlashSale(input, status) {
   }
 }
 
+// Harga per orang yang ditampilkan di kartu
 function getHarga(id) {
   const base = TIKET[id].harga;
-  return flashSaleAktif ? Math.round(base * FLASH_SALE_DISKON) : base;
+  if (flashSaleAktif) return Math.round(base * FLASH_SALE_DISKON);
+  if (bundlingAktif) {
+    const cfg = BUNDLING_CONFIG[bundlingAktif];
+    // tampilkan harga total bundling dibagi qty = harga "per orang efektif"
+    return Math.round(cfg.hargaTotal[id] / cfg.qty);
+  }
+  return base;
+}
+
+// Total yang dibayar
+function getTotalBayar(id) {
+  if (bundlingAktif) {
+    return BUNDLING_CONFIG[bundlingAktif].hargaTotal[id];
+  }
+  return getHarga(id) * jumlah;
 }
 
 function updateAllPriceDisplay() {
   Object.keys(TIKET).forEach(id => {
-    const el = document.getElementById('price-' + id);
-    if (el) el.textContent = Number(getHarga(id)).toLocaleString('id-ID');
+    const el    = document.getElementById('price-' + id);
+    const subEl = document.getElementById('price-sub-' + id);
+    if (!el) return;
+    if (bundlingAktif) {
+      const cfg = BUNDLING_CONFIG[bundlingAktif];
+      // tampilkan harga total bundling di kartu
+      el.textContent = Number(cfg.hargaTotal[id]).toLocaleString('id-ID');
+      if (subEl) subEl.textContent = `/ ${cfg.qty} tiket`;
+    } else {
+      el.textContent = Number(getHarga(id)).toLocaleString('id-ID');
+      if (subEl) subEl.textContent = '/ orang';
+    }
   });
+}
+
+// Kunci/buka qty berdasarkan bundling
+function updateQtyLock() {
+  const minus = document.getElementById('qtyMinus');
+  const plus  = document.getElementById('qtyPlus');
+  if (bundlingAktif) {
+    jumlah = BUNDLING_CONFIG[bundlingAktif].qty;
+    if (minus) minus.disabled = true;
+    if (plus)  plus.disabled  = true;
+    if (minus) minus.style.opacity = '0.3';
+    if (plus)  plus.style.opacity  = '0.3';
+  } else {
+    if (minus) minus.disabled = false;
+    if (plus)  plus.disabled  = false;
+    if (minus) minus.style.opacity = '';
+    if (plus)  plus.style.opacity  = '';
+  }
 }
 
 // ════════════════════════════════════════════
@@ -186,8 +254,15 @@ function setupCards() {
       card.classList.add('selected');
       card.querySelector('.select-btn').textContent = 'Dipilih ✓';
       selectedId = card.dataset.id;
+
+      // Jika bundling aktif, set jumlah sesuai bundling
+      if (bundlingAktif) {
+        jumlah = BUNDLING_CONFIG[bundlingAktif].qty;
+      }
+
       document.getElementById('qtySection').classList.add('show');
       updateQtyDisplay();
+      updateQtyLock();
       document.getElementById('qtySection').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     });
   });
@@ -204,7 +279,7 @@ function setupQty() {
 
 function updateQtyDisplay() {
   if (!selectedId) return;
-  const total = getHarga(selectedId) * jumlah;
+  const total = getTotalBayar(selectedId);
   document.getElementById('qtyNum').textContent   = jumlah;
   document.getElementById('qtyTotal').textContent = 'Total: ' + formatRupiah(total);
 }
@@ -220,25 +295,33 @@ function goToForm() {
 
 function renderFormForPerson(idx) {
   const tiket  = TIKET[selectedId];
-  const harga  = getHarga(selectedId);
-  const total  = harga * jumlah;
+  const harga  = bundlingAktif
+    ? Math.round(BUNDLING_CONFIG[bundlingAktif].hargaTotal[selectedId] / jumlah)
+    : getHarga(selectedId);
+  const total  = getTotalBayar(selectedId);
   const isLast = idx === jumlah - 1;
+
+  let kategoriLabel = tiket.label;
+  if (flashSaleAktif)  kategoriLabel += ' 🎉 Flash Sale';
+  if (bundlingAktif)   kategoriLabel += ` 🎁 ${BUNDLING_CONFIG[bundlingAktif].label}`;
 
   document.getElementById('formEyebrow').textContent     = `Langkah 2 dari 3 — Pemesan ${idx + 1} dari ${jumlah}`;
   document.getElementById('formTitle').textContent       = jumlah === 1 ? 'Data Pemesan' : `Data Pemesan ke-${idx + 1}`;
-  document.getElementById('summaryKategori').textContent = tiket.label + (flashSaleAktif ? ' 🎉 Flash Sale' : '');
+  document.getElementById('summaryKategori').textContent = kategoriLabel;
   document.getElementById('summaryUrutan').textContent   = `${idx + 1} dari ${jumlah}`;
   document.getElementById('summaryTotal').textContent    = formatRupiah(total);
   document.getElementById('nextPersonText').textContent  = isLast ? 'Lanjut ke Pembayaran →' : `Simpan & Lanjut ke Orang ke-${idx + 2} →`;
 
   const saved = persons[idx];
-  document.getElementById('inputEmail').value = saved ? saved.email : '';
-  document.getElementById('inputNama').value  = saved ? saved.nama  : '';
-  document.getElementById('inputHP').value    = saved ? saved.hp    : '';
-  document.getElementById('inputAsal').value  = saved ? saved.asal  : '';
+  document.getElementById('inputEmail').value  = saved ? saved.email  : '';
+  document.getElementById('inputNama').value   = saved ? saved.nama   : '';
+  document.getElementById('inputHP').value     = saved ? saved.hp     : '';
+  document.getElementById('inputAsal').value   = saved ? saved.asal   : '';
+  document.getElementById('inputSumber').value = saved ? saved.sumber : '';
 
   renderDots(idx);
 }
+
 
 function renderDots(activeIdx) {
   const container = document.getElementById('personDots');
@@ -252,15 +335,16 @@ function renderDots(activeIdx) {
 }
 
 function savePersonData() {
-  const email = document.getElementById('inputEmail').value.trim();
-  const nama  = document.getElementById('inputNama').value.trim();
-  const hp    = document.getElementById('inputHP').value.trim();
-  const asal  = document.getElementById('inputAsal').value.trim();
+  const email  = document.getElementById('inputEmail').value.trim();
+  const nama   = document.getElementById('inputNama').value.trim();
+  const hp     = document.getElementById('inputHP').value.trim();
+  const asal   = document.getElementById('inputAsal').value.trim();
+  const sumber = document.getElementById('inputSumber').value.trim();
 
-  if (!email || !nama || !hp || !asal) { alert('Harap isi semua data terlebih dahulu.'); return; }
+  if (!email || !nama || !hp || !asal || !sumber) { alert('Harap isi semua data terlebih dahulu.'); return; }
   if (!isValidEmail(email)) { alert('Format email tidak valid.'); return; }
 
-  persons[currentPerson] = { email, nama, hp, asal };
+  persons[currentPerson] = { email, nama, hp, asal, sumber };
 
   if (currentPerson < jumlah - 1) {
     currentPerson++;
@@ -285,8 +369,7 @@ function onBackFromForm() {
 
 function renderBuktiSummary() {
   const tiket = TIKET[selectedId];
-  const harga = getHarga(selectedId);
-  const total = harga * jumlah;
+  const total = getTotalBayar(selectedId);
   const box   = document.getElementById('buktiSummary');
 
   let rows = persons.map(p =>
@@ -363,10 +446,16 @@ async function submitAll() {
   spinner.style.display = 'inline-block';
 
   const tiket      = TIKET[selectedId];
-  const harga      = getHarga(selectedId);
-  const total      = harga * jumlah;
+  const harga      = bundlingAktif
+    ? Math.round(BUNDLING_CONFIG[bundlingAktif].hargaTotal[selectedId] / jumlah)
+    : getHarga(selectedId);
+  const total      = getTotalBayar(selectedId);
   const nomorOrder = generateOrderNumber();
   const waktu      = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', dateStyle: 'long', timeStyle: 'short' });
+
+  // Tentukan label bundling untuk dikirim ke spreadsheet
+  let bundlingLabel = null;
+  if (bundlingAktif) bundlingLabel = BUNDLING_CONFIG[bundlingAktif].label;
 
   const payload = {
     nomorOrder,
@@ -376,6 +465,7 @@ async function submitAll() {
     hargaSatuan:  harga,
     totalBayar:   formatRupiah(total),
     flashSale:    flashSaleAktif,
+    bundling:     bundlingLabel,
     persons,
     foto:         fotoBase64,
     fotoMime:     fotoMime,
@@ -412,6 +502,7 @@ function resetAll() {
   selectedId = null; jumlah = 1; currentPerson = 0; persons = [];
   fotoBase64 = null; fotoMime = ''; fotoNama = '';
   flashSaleAktif = false;
+  bundlingAktif  = null;
 
   document.querySelectorAll('.ticket-card:not(.card-unavailable)').forEach(c => {
     c.classList.remove('selected');
@@ -432,6 +523,9 @@ function resetAll() {
   try { document.getElementById('bookingForm').reset(); } catch(e) {}
   document.getElementById('uploadPreview').style.display     = 'none';
   document.getElementById('uploadPlaceholder').style.display = 'flex';
+
+  updateAllPriceDisplay();
+  updateQtyLock();
 
   const btn = document.getElementById('submitAllBtn');
   if (btn) btn.disabled = false;
