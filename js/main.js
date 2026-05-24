@@ -14,7 +14,7 @@ const TIKET = {
 };
 
 // ── Flash sale ──
-const FLASH_SALE_CODE   = 'PB26EKKIR';
+const FLASH_SALE_CODE   = 'YTTAAJAYAH';
 const FLASH_SALE_DISKON = 0.5; // 50% = setengah harga
 
 // ── Konfigurasi Bundling ──
