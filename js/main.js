@@ -3,7 +3,7 @@
    Reguler + VIP + VVIP | Flash Sale Code | Kuota Live | Bundling
 ═══════════════════════════════════════════════════════ */
 
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxLI-LTRNYS1pyPnWf5ZdkKFLYyf0X2OqgOdTsxQP96sHNYfpypju0nzVNIpyVqCD5s/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzsJln2iotdpC00kvv0VcSg1JLdXL6TVQDfPOlfgXMi4GKsXB_l3TJXR8x1mfPJXlSu/exec';
 // GANTI DENGAN URL DEPLOYMENT APPS SCRIPT KAMU YANG TERBARU
 
 // ── Konfigurasi tiket ──
