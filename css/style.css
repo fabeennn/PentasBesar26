@@ -337,3 +337,32 @@ body { background: var(--bg); color: var(--text); font-family: 'Jost', sans-seri
   .qty-box { width: 100%; }
   .section-title { font-size: 1.5rem; }
 }
+
+/* ── Kartu Pelajar Upload Section ── */
+#kartuPelajarSection {
+  margin-top: 1.5rem;
+  border: 1.5px dashed #f59e0b;
+  border-radius: 12px;
+  padding: 1.2rem 1.2rem 1rem;
+  background: rgba(245, 158, 11, 0.05);
+}
+
+.upload-label-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: .4rem;
+}
+
+#kartuPelajarSection .upload-area {
+  border-color: #f59e0b;
+}
+
+#kartuPelajarSection .upload-area:hover {
+  border-color: #fbbf24;
+  background: rgba(245, 158, 11, 0.06);
+}
+
+#kartuPelajarSection .upload-area.dragover {
+  border-color: #fbbf24;
+  background: rgba(245, 158, 11, 0.1);
+}
