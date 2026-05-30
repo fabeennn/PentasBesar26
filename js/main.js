@@ -3,7 +3,7 @@
    Reguler + VIP + VVIP | Flash Sale Code | Kuota Live | Bundling
 ═══════════════════════════════════════════════════════ */
 
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzsJln2iotdpC00kvv0VcSg1JLdXL6TVQDfPOlfgXMi4GKsXB_l3TJXR8x1mfPJXlSu/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxLI-LTRNYS1pyPnWf5ZdkKFLYyf0X2OqgOdTsxQP96sHNYfpypju0nzVNIpyVqCD5s/exec';
 // GANTI DENGAN URL DEPLOYMENT APPS SCRIPT KAMU YANG TERBARU
 
 // ── Konfigurasi tiket ──
@@ -17,6 +17,10 @@ const TIKET = {
 const FLASH_SALE_CODE   = 'PB26EKKIR';
 const FLASH_SALE_DISKON = 0.5; // 50% = setengah harga
 
+// ── Promo Pelajar ──
+const PELAJAR_CODE   = 'PELAJARINDONESIA';
+const PELAJAR_DISKON = 0.2; // 20%
+
 // ── Konfigurasi Bundling ──
 const BUNDLING_CONFIG = {
   // Bundling Berdua (qty=2)
@@ -25,17 +29,13 @@ const BUNDLING_CONFIG = {
   'KELUARGACEMARA':  { qty: 4, hargaTotal: { reg: 138000, vip: 210000, vvip: 278000 }, label: 'Bundling Berempat' },
 };
 
-// ── Promo Pelajar ──
-const PELAJAR_CODE   = 'PELAJARINDONESIA';
-const PELAJAR_DISKON = 0.2; // 20%
-
-let selectedId      = null;
-let jumlah          = 1;
-let currentPerson   = 0;
-let persons         = [];
-let fotoBase64      = null;
-let fotoMime        = '';
-let fotoNama        = '';
+let selectedId     = null;
+let jumlah         = 1;
+let currentPerson  = 0;
+let persons        = [];
+let fotoBase64     = null;
+let fotoMime       = '';
+let fotoNama       = '';
 let flashSaleAktif  = false;
 let bundlingAktif   = null; // null atau key dari BUNDLING_CONFIG
 let pelajarAktif    = false;
@@ -183,7 +183,6 @@ function applyFlashSale(input, status) {
     document.getElementById('flashSaleBtn').textContent = '✓ Aktif';
     status.textContent = '🎓 Promo Pelajar aktif! Diskon 20% untuk semua kategori. Wajib upload kartu pelajar.';
     status.className = 'flash-status flash-status--ok';
-    // Tampilkan section upload kartu pelajar di halaman pembayaran
     const kartuSection = document.getElementById('kartuPelajarSection');
     if (kartuSection) kartuSection.style.display = 'block';
     updateAllPriceDisplay();
@@ -472,14 +471,21 @@ function setupUploadKartu() {
   const removeBtn   = document.getElementById('removeKartu');
   if (!area) return;
 
-  area.addEventListener('click', (e) => { if (removeBtn && removeBtn.contains(e.target)) return; input.click(); });
+  area.addEventListener('click', (e) => {
+    if (removeBtn && removeBtn.contains(e.target)) return;
+    input.click();
+  });
   area.addEventListener('dragover', (e) => { e.preventDefault(); area.classList.add('dragover'); });
   area.addEventListener('dragleave', () => area.classList.remove('dragover'));
   area.addEventListener('drop', (e) => {
-    e.preventDefault(); area.classList.remove('dragover');
+    e.preventDefault();
+    area.classList.remove('dragover');
     if (e.dataTransfer.files[0]) handleKartuFile(e.dataTransfer.files[0]);
   });
-  input.addEventListener('change', () => { if (input.files[0]) handleKartuFile(input.files[0]); });
+  input.addEventListener('change', () => {
+    if (input.files[0]) handleKartuFile(input.files[0]);
+  });
+
   if (removeBtn) {
     removeBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -496,7 +502,7 @@ function setupUploadKartu() {
     const reader = new FileReader();
     reader.onload = (ev) => {
       const result    = ev.target.result;
-      fotoKartuBase64 = result.split(',')[1];
+      fotoKartuBase64 = result.split(',')[1]; // base64 tanpa prefix
       fotoKartuMime   = file.type;
       fotoKartuNama   = file.name;
       previewImg.src          = result;
@@ -513,7 +519,7 @@ function setupUploadKartu() {
 // ════════════════════════════════════════════
 async function submitAll() {
   if (!fotoBase64) { alert('Harap upload foto bukti pembayaran terlebih dahulu.'); return; }
-  if (pelajarAktif && !fotoKartuBase64) { alert('Harap upload foto kartu pelajar untuk mendapatkan promo pelajar.'); return; }
+  if (pelajarAktif && !fotoKartuBase64) { alert('Harap upload foto kartu pelajar untuk mendapatkan Promo Pelajar.'); return; }
 
   const btn     = document.getElementById('submitAllBtn');
   const btnText = document.getElementById('submitText');
@@ -537,20 +543,20 @@ async function submitAll() {
   const payload = {
     nomorOrder,
     waktu,
-    kategori:        tiket.label,
+    kategori:      tiket.label,
     jumlah,
-    hargaSatuan:     harga,
-    totalBayar:      formatRupiah(total),
-    flashSale:       flashSaleAktif,
-    pelajar:         pelajarAktif,
-    bundling:        bundlingLabel,
+    hargaSatuan:   harga,
+    totalBayar:    formatRupiah(total),
+    flashSale:     flashSaleAktif,
+    pelajar:       pelajarAktif,
+    bundling:      bundlingLabel,
     persons,
-    foto:            fotoBase64,
-    fotoMime:        fotoMime,
-    fotoNama:        fotoNama,
-    fotoKartu:       fotoKartuBase64,
-    fotoKartuMime:   fotoKartuMime,
-    fotoKartuNama:   fotoKartuNama,
+    foto:          fotoBase64,
+    fotoMime:      fotoMime,
+    fotoNama:      fotoNama,
+    fotoKartu:     fotoKartuBase64,
+    fotoKartuMime: fotoKartuMime,
+    fotoKartuNama: fotoKartuNama,
   };
 
   try {
@@ -609,15 +615,15 @@ function resetAll() {
   document.getElementById('uploadPreview').style.display     = 'none';
   document.getElementById('uploadPlaceholder').style.display = 'flex';
 
-  // Reset kartu pelajar upload
+  // Reset kartu pelajar
   const kartuSection = document.getElementById('kartuPelajarSection');
   if (kartuSection) kartuSection.style.display = 'none';
-  const kartuPreview = document.getElementById('kartuPreview');
-  const kartuPlaceholder = document.getElementById('kartuPlaceholder');
+  const kartuPrev  = document.getElementById('kartuPreview');
+  const kartuPhold = document.getElementById('kartuPlaceholder');
   const kartuInput = document.getElementById('inputKartu');
-  if (kartuPreview)     kartuPreview.style.display     = 'none';
-  if (kartuPlaceholder) kartuPlaceholder.style.display = 'flex';
-  if (kartuInput)       kartuInput.value               = '';
+  if (kartuPrev)  kartuPrev.style.display  = 'none';
+  if (kartuPhold) kartuPhold.style.display = 'flex';
+  if (kartuInput) kartuInput.value         = '';
 
   updateAllPriceDisplay();
   updateQtyLock();
