@@ -14,7 +14,7 @@ const TIKET = {
 };
 
 // ── Flash sale ──
-const FLASH_SALE_CODE   = 'PB26EKKIR';
+const FLASH_SALE_CODE   = 'YTTAAJAH';
 const FLASH_SALE_DISKON = 0.5; // 50% = setengah harga
 
 // ── Promo Pelajar ──
